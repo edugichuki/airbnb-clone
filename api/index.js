@@ -1,14 +1,16 @@
 const express = require("express");
 const cors = require("cors");
-// const bodyParser = require("body-parser");
+const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const bcryptSalt = bcrypt.genSaltSync(10);
+const jwtSecret = "hdasbnfbwjerhtjbgdas";
 const User = require("./models/user.js");
 require("dotenv").config({ path: "../vars/.env" });
 const app = express();
 
-// app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   cors({
@@ -55,13 +57,39 @@ app.get("/test", (req, res) => {
 
 app.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
+  try {
+    const userDoc = await User.create({
+      name: name,
+      email: email,
+      password: bcrypt.hashSync(password, bcryptSalt),
+    });
+    res.json(userDoc);
+  } catch (e) {
+    res.status(422).json(e);
+  }
+});
 
-  const userDoc = await User.create({
-    name: name,
-    email: email,
-    password: bcrypt.hashSync(password, bcryptSalt),
-  });
-  res.json(userDoc);
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
 
-  res.status(422).json(e);
+  //? Query the DB
+  const userFound = await User.findOne({ email: email });
+  if (userFound) {
+    const correctPass = bcrypt.compareSync(password, userFound.password);
+    if (correctPass) {
+      jwt.sign(
+        { email: userFound.email, id: userFound._id },
+        jwtSecret,
+        {},
+        (err, token) => {
+          if (err) throw err;
+          res.cookie("token", token).json(userFound);
+        }
+      );
+    } else {
+      res.status(422).json("password failed");
+    }
+  } else {
+    res.json("error");
+  }
 });
