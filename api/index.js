@@ -3,6 +3,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
+const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = "hdasbnfbwjerhtjbgdas";
@@ -11,6 +12,7 @@ require("dotenv").config({ path: "../vars/.env" });
 const app = express();
 
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(express.json());
 app.use(
   cors({
@@ -78,7 +80,7 @@ app.post("/login", async (req, res) => {
     const correctPass = bcrypt.compareSync(password, userFound.password);
     if (correctPass) {
       jwt.sign(
-        { email: userFound.email, id: userFound._id },
+        { email: userFound.email, id: userFound._id, name: userFound.name },
         jwtSecret,
         {},
         (err, token) => {
@@ -91,5 +93,23 @@ app.post("/login", async (req, res) => {
     }
   } else {
     res.json("error");
+  }
+});
+
+app.get("/profile", (req, res) => {
+  const { token } = req.cookies;
+  if (token) {
+    jwt.verify(token, jwtSecret, {}, async (err, userData) => {
+      if (err) {
+        // Handle the error here, e.g., send an error response
+        res.status(401).json({ error: "Token is invalid" });
+      } else {
+        // Token is valid, you can use the "userData" object
+        const { name, email, _id } = await User.findById(userData.id);
+        res.json({ name, email, _id });
+      }
+    });
+  } else {
+    res.json(null);
   }
 });
