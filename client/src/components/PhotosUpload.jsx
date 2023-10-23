@@ -2,7 +2,6 @@
 import axios from "axios";
 import { useState } from "react";
 
-// eslint-disable-next-line react/prop-types
 const PhotoUpload = ({ addedPhotos, onChange }) => {
   const [photoLink, setPhotoLink] = useState("");
 
@@ -55,8 +54,8 @@ const PhotoUpload = ({ addedPhotos, onChange }) => {
 
       <div className="gap-2  mt-2 grid md:grid-cols-3 lg:grid-cols-6">
         {addedPhotos.length > 0 &&
-          addedPhotos.map((link) => (
-            <div key={link} className="h-32 flex">
+          addedPhotos.map((link, index) => (
+            <div key={index} className="h-32 flex">
               <img
                 className="rounded-2xl w-full object-cover"
                 src={"http://localhost:8080/uploads/" + link}
