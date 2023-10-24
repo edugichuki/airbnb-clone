@@ -18,6 +18,7 @@ const PlacesFormPage = () => {
   const [checkOut, setCheckOut] = useState("");
   const [maxGuest, setMaxGuest] = useState("1");
   const [redirect, setRedirect] = useState("");
+  const [price, setPrice] = useState("100");
   useEffect(() => {
     if (!id) {
       return;
@@ -26,13 +27,14 @@ const PlacesFormPage = () => {
       const { data } = response;
       setTitle(data.title);
       setAddress(data.address);
-      setAddedPhotos(data.addedPhotos);
+      setAddedPhotos(data.photos);
       setDescription(data.description);
       setPerks(data.perks);
       setExtraInfo(data.extraInfo);
       SetCheckIn(data.checkIn);
       setCheckOut(data.checkOut);
-      setMaxGuest(data.maxGuest);
+      setMaxGuest(data.maxGuests);
+      setPrice(data.price);
     });
   }, [id]);
 
@@ -61,6 +63,7 @@ const PlacesFormPage = () => {
     checkIn,
     checkOut,
     maxGuest,
+    price,
   };
 
   const savePlace = async (e) => {
@@ -68,16 +71,14 @@ const PlacesFormPage = () => {
     if (id) {
       //update
 
-      await axios.put("/places", {
+      await axios.put("/places/:id", {
         id,
         ...placeData,
       });
       setRedirect(true);
     } else {
       //new place
-      await axios.post("/places", {
-        ...placeData,
-      });
+      await axios.post("/places", placeData);
       setRedirect(true);
     }
   };
@@ -136,7 +137,7 @@ const PlacesFormPage = () => {
             "check in and out times, remember to have some time window for cleaning the room between guests"
           )}
 
-          <div className="grid sm:grid-cols-3 gap-2 mt-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
             <div>
               <h3 className="mt-2 -mb-1">Check in time</h3>
               <input
@@ -145,7 +146,7 @@ const PlacesFormPage = () => {
                 onChange={(e) => {
                   SetCheckIn(e.target.value);
                 }}
-                placeholder="18:00"
+                placeholder="18"
               />
             </div>
             <div>
@@ -156,7 +157,7 @@ const PlacesFormPage = () => {
                 onChange={(e) => {
                   setCheckOut(e.target.value);
                 }}
-                placeholder="11:00"
+                placeholder="11"
               />
             </div>
             <div>
@@ -166,6 +167,16 @@ const PlacesFormPage = () => {
                 value={maxGuest}
                 onChange={(e) => {
                   setMaxGuest(e.target.value);
+                }}
+              />
+            </div>
+            <div>
+              <h3 className="mt-2 -mb-1">Price per night</h3>
+              <input
+                type="number"
+                value={price}
+                onChange={(e) => {
+                  setPrice(e.target.value);
                 }}
               />
             </div>
