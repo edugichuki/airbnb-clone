@@ -12,6 +12,7 @@ const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = "hdasbnfbwjerhtjbgdas";
 const User = require("./models/user.js");
 const Place = require("./models/place.js");
+const Booking = require("./models/booking.js");
 require("dotenv").config({ path: "../vars/.env" });
 const app = express();
 
@@ -277,4 +278,35 @@ app.put("/places/:id", async (req, res) => {
 
 app.get("/places", async (req, res) => {
   res.json(await Place.find());
+});
+
+app.post("/bookings", async (req, res) => {
+  const userData = await getUserDataFromRequest(req);
+  const { place, checkIn, checkOut, numberOfGuests, name, phone, price } =
+    req.body;
+  const bookingDoc = await Booking.create({
+    place,
+    checkIn,
+    checkOut,
+    numberOfGuests,
+    name,
+    phone,
+    price,
+    user: userData.id,
+  });
+  res.json(bookingDoc);
+});
+
+const getUserDataFromRequest = (req) => {
+  return new Promise((resolve, reject) => {
+    jwt.verify(req.cookies.token, jwtSecret, {}, async (err, userData) => {
+      if (err) throw err;
+      resolve(userData);
+    });
+  });
+};
+
+app.get("/bookings", async (req, res) => {
+  const userData = await getUserDataFromRequest(req);
+  res.json(await Booking.find({ user: userData.id }).populate("place"));
 });
