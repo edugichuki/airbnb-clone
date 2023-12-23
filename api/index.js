@@ -88,12 +88,12 @@ const uploadToS3 = async (path, originalFilename, mimetype) => {
   return `https://${bucket}.s3.amazonaws.com/${newFilename}`;
 };
 
-app.get("/test", (req, res) => {
+app.get("api/test", (req, res) => {
   mongoose.connect(mongoURL);
   res.json("test ok");
 });
 
-app.post("/register", async (req, res) => {
+app.post("api/register", async (req, res) => {
   mongoose.connect(mongoURL);
   const { name, email, password } = req.body;
   try {
@@ -108,7 +108,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-app.post("/login", async (req, res) => {
+app.post("api/login", async (req, res) => {
   mongoose.connect(mongoURL);
   const { email, password } = req.body;
 
@@ -134,7 +134,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.get("/profile", (req, res) => {
+app.get("api/profile", (req, res) => {
   mongoose.connect(mongoURL);
   const { token } = req.cookies;
   if (token) {
@@ -153,11 +153,11 @@ app.get("/profile", (req, res) => {
   }
 });
 
-app.post("/logout", (req, res) => {
+app.post("api/logout", (req, res) => {
   res.cookie("token", "").json(true);
 });
 
-app.post("/upload-by-link", async (req, res) => {
+app.post("api/upload-by-link", async (req, res) => {
   const { uri } = req.body;
   const newName = "photo_" + Date.now() + ".jpg";
   const options = {
@@ -184,7 +184,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-app.post("/uploads", upload.array("photos", 100), async (req, res, next) => {
+app.post("api/uploads", upload.array("photos", 100), async (req, res, next) => {
   mongoose.connect(mongoURL);
   const uploadedFiles = [];
   for (let i = 0; i < req.files.length; i++) {
@@ -194,7 +194,7 @@ app.post("/uploads", upload.array("photos", 100), async (req, res, next) => {
   }
   res.json(uploadedFiles);
 });
-app.post("/places", async (req, res) => {
+app.post("api/places", async (req, res) => {
   const { token } = req.cookies;
   const {
     title,
@@ -230,7 +230,7 @@ app.post("/places", async (req, res) => {
   });
 });
 
-app.get("/user-places", (req, res) => {
+app.get("api/user-places", (req, res) => {
   mongoose.connect(mongoURL);
   const { token } = req.cookies;
   jwt.verify(token, jwtSecret, {}, async (err, userData) => {
@@ -239,13 +239,13 @@ app.get("/user-places", (req, res) => {
   });
 });
 
-app.get("/places/:id", async (req, res) => {
+app.get("api/places/:id", async (req, res) => {
   mongoose.connect(mongoURL);
   const { id } = req.params;
   res.json(await Place.findById(id));
 });
 
-app.put("/places/:id", async (req, res) => {
+app.put("api/places/:id", async (req, res) => {
   mongoose.connect(mongoURL);
   const { token } = req.cookies;
   const {
@@ -284,12 +284,12 @@ app.put("/places/:id", async (req, res) => {
   });
 });
 
-app.get("/places", async (req, res) => {
+app.get("api/places", async (req, res) => {
   mongoose.connect(mongoURL);
   res.json(await Place.find());
 });
 
-app.post("/bookings", async (req, res) => {
+app.post("api/bookings", async (req, res) => {
   mongoose.connect(mongoURL);
   const userData = await getUserDataFromRequest(req);
   const { place, checkIn, checkOut, numberOfGuests, name, phone, price } =
@@ -316,8 +316,10 @@ const getUserDataFromRequest = (req) => {
   });
 };
 
-app.get("/bookings", async (req, res) => {
+app.get("api/bookings", async (req, res) => {
   mongoose.connect(mongoURL);
   const userData = await getUserDataFromRequest(req);
   res.json(await Booking.find({ user: userData.id }).populate("place"));
 });
+
+app.listen(8080);
