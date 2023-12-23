@@ -28,11 +28,12 @@ app.use("/uploads", express.static(__dirname + "/uploads"));
 app.use(
   cors({
     origin: "http://localhost:5173",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    preflightContinue: false,
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization", "Origin"],
-    optionsSuccessStatus: 204,
+    // methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    // preflightContinue: false,
+
+    // allowedHeaders: ["Content-Type", "Authorization", "Origin"],
+    // optionsSuccessStatus: 204,
   })
 );
 
