@@ -16,7 +16,7 @@ import PlacePage from "./pages/PlacePage";
 import PlacesFormPage from "./pages/PlacesFormPage";
 import PlacesPage from "./pages/PlacesPage";
 import ProfilePage from "./pages/ProfilePage";
-axios.defaults.baseURL = "http://localhost:8080";
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
 axios.defaults.withCredentials = true;
 
 function App() {
