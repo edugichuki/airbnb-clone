@@ -1,3 +1,5 @@
+import Image from "./Image";
+
 /* eslint-disable react/prop-types */
 const PlaceImage = ({ place, index = 0, className = null }) => {
   if (!place.photos.length) {
@@ -8,11 +10,7 @@ const PlaceImage = ({ place, index = 0, className = null }) => {
   }
   return (
     <>
-      <img
-        className={className}
-        src={"http://localhost:8080/uploads/" + place.photos[index]}
-        alt=""
-      />
+      <Image className={className} src={place.photos[index]} alt="" />
     </>
   );
 };

@@ -15,6 +15,10 @@ const Place = require("./models/place.js");
 const Booking = require("./models/booking.js");
 require("dotenv").config({ path: "../vars/.env" });
 const app = express();
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const mime = require("mime-types");
+
+const bucket = "mybookingappbucket";
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -34,37 +38,63 @@ app.use(
 
 mongoose.set("strictQuery", false);
 // Define a function named connectDB that connects to a MongoDB database.
-const connectDB = async () => {
-  try {
-    // Construct a connection URL using environment variables.
-    const mongoURL = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0.vkgutad.mongodb.net/${process.env.MONGO_DB}?retryWrites=true&w=majority`;
-    // Use Mongoose to connect to the MongoDB server using the URL.
-    const conn = await mongoose.connect(mongoURL);
-    // Log a message indicating a successful database connection.
-    console.log(`MongoDB connected: ${conn.connection.host}`);
-  } catch (e) {
-    // If there's an error, log an error message and exit the application.
-    console.log("Connection error: " + e.message);
-    process.exit(1); // Exiting the application with an error code (1).
-  }
-};
-// Define a variable named PORT and assign it a value from an environment variable or 80 if not defined.
-let PORT = 8080;
+// const connectDB = async () => {
+//   try {
+//     // Construct a connection URL using environment variables.
+//     const mongoURL = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0.vkgutad.mongodb.net/${process.env.MONGO_DB}?retryWrites=true&w=majority`;
+//     // Use Mongoose to connect to the MongoDB server using the URL.
+//     const conn = await mongoose.connect(mongoURL);
+//     // Log a message indicating a successful database connection.
+//     console.log(`MongoDB connected: ${conn.connection.host}`);
+//   } catch (e) {
+//     // If there's an error, log an error message and exit the application.
+//     console.log("Connection error: " + e.message);
+//     process.exit(1); // Exiting the application with an error code (1).
+//   }
+// };
+// // Define a variable named PORT and assign it a value from an environment variable or 80 if not defined.
+// let PORT = 8080;
 
-// Call the connectDB function to establish a connection to the MongoDB database.
-connectDB().then(() => {
-  // After the database connection is established, start a web server on the specified port.
-  app.listen(PORT, () => {
-    console.log(`Server started on port ${PORT}`);
-    console.log(`CORS-enabled web server listening on port ${PORT}`);
+// // Call the connectDB function to establish a connection to the MongoDB database.
+// connectDB().then(() => {
+//   // After the database connection is established, start a web server on the specified port.
+//   app.listen(PORT, () => {
+//     console.log(`Server started on port ${PORT}`);
+//     console.log(`CORS-enabled web server listening on port ${PORT}`);
+//   });
+// });
+
+const uploadToS3 = async (path, originalFilename, mimetype) => {
+  const client = new S3Client({
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY,
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+    },
   });
-});
+
+  const parts = originalFilename.split(".");
+  const ext = parts[parts.length - 1];
+  const newFilename = Date.now() + "." + ext;
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      body: fs.readFileSync(path),
+      key: newFilename,
+      ContentType: mimetype,
+      ACL: "public-read",
+    })
+  );
+  return `https://${bucket}.s3.amazonaws.com/${newFilename}`;
+};
 
 app.get("/test", (req, res) => {
+  mongoose.connect(mongoURL);
   res.json("test ok");
 });
 
 app.post("/register", async (req, res) => {
+  mongoose.connect(mongoURL);
   const { name, email, password } = req.body;
   try {
     const userDoc = await User.create({
@@ -79,6 +109,7 @@ app.post("/register", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
+  mongoose.connect(mongoURL);
   const { email, password } = req.body;
 
   //? Query the DB
@@ -104,6 +135,7 @@ app.post("/login", async (req, res) => {
 });
 
 app.get("/profile", (req, res) => {
+  mongoose.connect(mongoURL);
   const { token } = req.cookies;
   if (token) {
     jwt.verify(token, jwtSecret, {}, async (err, userData) => {
@@ -130,30 +162,20 @@ app.post("/upload-by-link", async (req, res) => {
   const newName = "photo_" + Date.now() + ".jpg";
   const options = {
     url: uri,
-    dest: __dirname + "/uploads/" + newName,
+    dest: "/tmp/" + newName,
   };
   await download.image(options);
-  res.json(newName);
+  const url = await uploadToS3(
+    "/tmp/" + newName,
+    newName,
+    mime.lookup("/tmp/" + newName)
+  );
+  res.json(url);
 });
-
-// const photoUpload = multer({ dest: "uploads/" });
-// app.post("/uploads", photoUpload.array("photos", 100), (req, res) => {
-//   const uploadedFiles = [];
-//   for (let i = 0; i < req.files.length; i++) {
-//     const { filename, originalname, path } = req.files[i];
-//     const parts = originalname.split(".");
-//     const ext = parts[parts.length - 1];
-//     const newPath = path + "." + ext;
-//     fs.renameSync(path, newPath);
-//     const image = newPath.replace("uploads", "");
-//     uploadedFiles.push(image);
-//   }
-//   res.json(uploadedFiles);
-// });
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/");
+    cb(null, "/tmp");
   },
   filename: function (req, file, cb) {
     cb(null, file.fieldname + "_" + Date.now());
@@ -162,32 +184,15 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-app.post("/uploads", (req, res, next) => {
-  // Error handling for multer
-  upload.array("photos", 100)(req, res, function (err) {
-    if (err instanceof multer.MulterError) {
-      // A Multer error occurred (e.g., file size exceeded)
-      return res.status(400).json({ error: "Multer error: " + err.message });
-    } else if (err) {
-      // An unexpected error occurred
-      return res
-        .status(500)
-        .json({ error: "An error occurred during file upload." });
-    }
-
-    // Files were uploaded successfully
-    const uploadedFiles = [];
-    for (let i = 0; i < req.files.length; i++) {
-      const { filename, originalname, path } = req.files[i];
-      const parts = originalname.split(".");
-      const ext = parts[parts.length - 1];
-      const newPath = path + "." + ext;
-      fs.renameSync(path, newPath);
-      const image = newPath.replace("uploads", "");
-      uploadedFiles.push(image);
-    }
-    res.json(uploadedFiles);
-  });
+app.post("/uploads", upload.array("photos", 100), async (req, res, next) => {
+  mongoose.connect(mongoURL);
+  const uploadedFiles = [];
+  for (let i = 0; i < req.files.length; i++) {
+    const { filename, originalname, path, mimetype } = req.files[i];
+    const url = await uploadToS3(path, originalname, mimetype);
+    uploadedFiles.push(url);
+  }
+  res.json(uploadedFiles);
 });
 app.post("/places", async (req, res) => {
   const { token } = req.cookies;
@@ -226,6 +231,7 @@ app.post("/places", async (req, res) => {
 });
 
 app.get("/user-places", (req, res) => {
+  mongoose.connect(mongoURL);
   const { token } = req.cookies;
   jwt.verify(token, jwtSecret, {}, async (err, userData) => {
     const { id } = userData;
@@ -234,11 +240,13 @@ app.get("/user-places", (req, res) => {
 });
 
 app.get("/places/:id", async (req, res) => {
+  mongoose.connect(mongoURL);
   const { id } = req.params;
   res.json(await Place.findById(id));
 });
 
 app.put("/places/:id", async (req, res) => {
+  mongoose.connect(mongoURL);
   const { token } = req.cookies;
   const {
     id,
@@ -277,10 +285,12 @@ app.put("/places/:id", async (req, res) => {
 });
 
 app.get("/places", async (req, res) => {
+  mongoose.connect(mongoURL);
   res.json(await Place.find());
 });
 
 app.post("/bookings", async (req, res) => {
+  mongoose.connect(mongoURL);
   const userData = await getUserDataFromRequest(req);
   const { place, checkIn, checkOut, numberOfGuests, name, phone, price } =
     req.body;
@@ -307,6 +317,7 @@ const getUserDataFromRequest = (req) => {
 };
 
 app.get("/bookings", async (req, res) => {
+  mongoose.connect(mongoURL);
   const userData = await getUserDataFromRequest(req);
   res.json(await Booking.find({ user: userData.id }).populate("place"));
 });

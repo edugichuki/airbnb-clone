@@ -24,7 +24,7 @@ const Header = () => {
           </svg>
           <span className="font-bold text-2xl">homebnb</span>
         </Link>
-        <div className="flex gap-2 border border-gray-300 rounded-full px-4 py-2 font-semibold shadow-md shadow-gray-300">
+        <div className="md:flex gap-2 border hidden border-gray-300 rounded-full px-4 py-2 font-semibold shadow-md shadow-gray-300">
           <div>Anywhere</div>
           <div className="border-l border-gray-300"></div>
           <div>Any week</div>
@@ -50,10 +50,10 @@ const Header = () => {
         {/* hover:border shadow-gray-300 hover:rounded-full */}
 
         <div className="flex">
-          <div className="flex gap-2 rounded-full hover:bg-gray-200 px-4 py-2 font-semibold">
+          <div className="md:flex hidden gap-2 rounded-full hover:bg-gray-200 px-4 py-2 font-semibold">
             homebnb your home
           </div>
-          <div className="flex gap-2 hover:bg-gray-200 rounded-full px-4 py-2 font-semibold">
+          <div className="hidden md:flex gap-2 hover:bg-gray-200 rounded-full px-4 py-2 font-semibold">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"

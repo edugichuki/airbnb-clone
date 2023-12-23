@@ -2,6 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import axios from "axios";
 import { useState } from "react";
+import Image from "./Image";
 
 const PhotoUpload = ({ addedPhotos = [], onChange }) => {
   const [photoLink, setPhotoLink] = useState("");
@@ -70,10 +71,7 @@ const PhotoUpload = ({ addedPhotos = [], onChange }) => {
         {addedPhotos.length > 0 &&
           addedPhotos.map((link, index) => (
             <div key={index} className="h-32 flex relative">
-              <img
-                className="rounded-2xl w-full object-cover"
-                src={"http://localhost:8080/uploads/" + link}
-              />
+              <Image className="rounded-2xl w-full object-cover" src={link} />
               <button
                 onClick={(e) => {
                   removePhoto(e, link);
